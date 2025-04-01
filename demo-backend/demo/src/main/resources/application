@@ -1,0 +1,15 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: backend-service
+
+eureka:
+  instance:
+    hostname: localhost           # 👈 explicitly set to localhost
+    prefer-ip-address: false      # 👈 set clearly to false to prefer hostname
+
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka
