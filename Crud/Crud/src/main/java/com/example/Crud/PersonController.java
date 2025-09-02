@@ -18,15 +18,16 @@ public class PersonController {
     @PostMapping
     public ResponseEntity<Person> createPerson(@RequestBody Person person) {
         Person createdPerson = personService.createPerson(person);
+        personService.hello();
         return ResponseEntity.status(201).body(createdPerson); // 201 Created
     }
 
     // GET /persons/{id} - Retrieve a person by ID
     @GetMapping("/{id}")
     public ResponseEntity<Person> getPersonById(@PathVariable Long id) {
-        Optional<Person> person = personService.getPersonById(id);
-        if (person.isPresent()) {
-            return ResponseEntity.ok(person.get()); // 200 OK
+        Person person = personService.getPersonOrThrow(id);
+        if (person.getName() != null ) {
+            return ResponseEntity.ok(person); // 200 OK
         } else {
             return ResponseEntity.notFound().build(); // 404 Not Found
         }
@@ -37,7 +38,7 @@ public class PersonController {
     public ResponseEntity<Person> updatePerson(@PathVariable Long id, @RequestBody Person updatedPerson) {
         try {
             Person person = personService.updatePerson(id, updatedPerson);
-            return ResponseEntity.ok(person); // 200 OK
+            return ResponseEntity.status(202).body(person); // 200 OK
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build(); // 404 if not found
         }

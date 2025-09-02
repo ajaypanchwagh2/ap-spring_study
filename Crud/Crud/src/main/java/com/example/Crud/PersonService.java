@@ -51,4 +51,20 @@ public class PersonService {
     {
         return personRepository.findById(id);
     }
+
+    public  void hello()
+    {
+        System.out.println("hi");
+    }
+
+
+    public Person getPersonOrThrow(Long id) {
+        if (id == null || id <= 0) {
+            throw new InvalidInputException("Invalid ID: " + id);
+        }
+
+        return personRepository.findById(id)
+                .orElseThrow(() -> new InvalidInputException("Person not found with id " + id));
+    }
+
 }
