@@ -1,24 +1,28 @@
 package com.example.Crud;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 
 @Entity
 @Table(name = "person")
 public class Person {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Name cannot be blank")
     private String name;
+
+    @NotNull @Min(value = 0, message = "Age must be >= 0")
     private Integer age;
+
+    @Email(message = "Invalid email format")
     private String email;
 
-    // Constructors
+    // getters/setters/ctors...
+
+
+
+// Constructors
     public Person() {
     }
 
@@ -26,6 +30,9 @@ public class Person {
         this.name = name;
         this.age = age;
         this.email = email;
+    }
+    public void setId(Long id) { // <-- Required for test
+        this.id = id;
     }
 
     // Getters and Setters

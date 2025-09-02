@@ -1,70 +1,41 @@
 package com.example.Crud;
 
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class PersonService {
+    private final PersonRepository repo;
+    public PersonService(PersonRepository repo) { this.repo = repo; }
 
-    @Autowired
-    private PersonRepository personRepository;
+    public Person create(Person p) { return repo.save(p); }
 
-    // Create a new person (POST)
-    public Person createPerson(Person person) {
-        return personRepository.save(person);
+    public Person getOrThrow(Long id) {
+        if (id == null || id <= 0) throw new InvalidInputException("Invalid id: " + id); // → 400
+        return repo.findById(id)
+                .orElseThrow(() -> new PersonNotFoundException("Person not found with id " + id)); // → 404
     }
 
-    // Retrieve a person by ID (GET)
-    public Optional<Person> getPersonById(Long id) {
-        return personRepository.findById(id);
+    public Person update(Long id, Person in) {
+        Person p = getOrThrow(id);
+        p.setName(in.getName());
+        p.setAge(in.getAge());
+        p.setEmail(in.getEmail());
+        return repo.save(p); // → 200
     }
 
-    // Update a person (PUT)
-    public Person updatePerson(Long id, Person updatedPerson) {
-        return personRepository.findById(id)
-                .map(existingPerson -> {
-                    existingPerson.setName(updatedPerson.getName());
-                    existingPerson.setAge(updatedPerson.getAge());
-                    existingPerson.setEmail(updatedPerson.getEmail());
-                    return personRepository.save(existingPerson);
-                })
-                .orElseThrow(() -> new RuntimeException("Person not found with id " + id));
+    public void delete(Long id) {
+        if (!repo.existsById(id)) throw new PersonNotFoundException("Person not found with id " + id); // → 404
+        repo.deleteById(id); // → 204
     }
 
-    // Delete a person (DELETE)
-    public void deletePerson(Long id) {
-        if (!personRepository.existsById(id)) {
-            throw new RuntimeException("Person not found with id " + id);
-        }
-        personRepository.deleteById(id);
+    public List<Person> list() { return repo.findAll(); } // → 200
+    public List<Person> searchByName(String name) {
+        // Replace this with real repo call in future
+        return List.of(); // dummy implementation
     }
 
-    // Retrieve all persons (GET)
-    public List<Person> getAllPersons() {
-        return personRepository.findAll();
-    }
-
-    public Optional<Person> getPerson(Long id )
-    {
-        return personRepository.findById(id);
-    }
-
-    public  void hello()
-    {
-        System.out.println("hi");
-    }
-
-
-    public Person getPersonOrThrow(Long id) {
-        if (id == null || id <= 0) {
-            throw new InvalidInputException("Invalid ID: " + id);
-        }
-
-        return personRepository.findById(id)
-                .orElseThrow(() -> new InvalidInputException("Person not found with id " + id));
-    }
 
 }

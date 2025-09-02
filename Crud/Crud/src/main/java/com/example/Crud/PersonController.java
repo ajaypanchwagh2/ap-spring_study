@@ -1,64 +1,59 @@
 package com.example.Crud;
 
-import org.springframework.beans.factory.annotation.Autowired;
+
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/persons")
 public class PersonController {
+    private final PersonService svc;
+    public PersonController(PersonService svc) { this.svc = svc; }
 
-    @Autowired
-    private PersonService personService;
-
-    // POST /persons - Create a new person
+    // 201 Created + Location header
     @PostMapping
-    public ResponseEntity<Person> createPerson(@RequestBody Person person) {
-        Person createdPerson = personService.createPerson(person);
-        personService.hello();
-        return ResponseEntity.status(201).body(createdPerson); // 201 Created
+    public ResponseEntity<Person> create(@Valid @RequestBody Person person) {
+        Person saved = svc.create(person);
+        return ResponseEntity
+                .created(URI.create("/persons/" + saved.getId()))
+                .body(saved); // 201
     }
 
-    // GET /persons/{id} - Retrieve a person by ID
+    // 200 OK or 404 via exception handler
     @GetMapping("/{id}")
-    public ResponseEntity<Person> getPersonById(@PathVariable Long id) {
-        Person person = personService.getPersonOrThrow(id);
-        if (person.getName() != null ) {
-            return ResponseEntity.ok(person); // 200 OK
-        } else {
-            return ResponseEntity.notFound().build(); // 404 Not Found
-        }
+    public ResponseEntity<Person> get(@PathVariable Long id) {
+        return ResponseEntity.ok(svc.getOrThrow(id)); // 200
     }
 
-    // PUT /persons/{id} - Update a person
+    // 200 OK on update
     @PutMapping("/{id}")
-    public ResponseEntity<Person> updatePerson(@PathVariable Long id, @RequestBody Person updatedPerson) {
-        try {
-            Person person = personService.updatePerson(id, updatedPerson);
-            return ResponseEntity.status(202).body(person); // 200 OK
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build(); // 404 if not found
-        }
+    public ResponseEntity<Person> update(@PathVariable Long id, @Valid @RequestBody Person person) {
+        return ResponseEntity.ok(svc.update(id, person)); // 200
     }
 
-    // DELETE /persons/{id} - Delete a person
+    // 204 No Content on delete
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePerson(@PathVariable Long id) {
-        try {
-            personService.deletePerson(id);
-            return ResponseEntity.noContent().build(); // 204 No Content
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build(); // 404 if not found
-        }
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        svc.delete(id);
+        return ResponseEntity.noContent().build(); // 204
     }
 
-    // GET /persons - Retrieve all persons
+    // 200 OK list
     @GetMapping
-    public ResponseEntity<List<Person>> getAllPersons() {
-        List<Person> persons = personService.getAllPersons();
-        return ResponseEntity.ok(persons); // 200 OK
+    public ResponseEntity<List<Person>> list() {
+        return ResponseEntity.ok(svc.list()); // 200
     }
+
+    // Optional: example of manual 400 for query param validation
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Person>> search(@RequestParam(required = false) String name) {
+        if (name == null || name.isBlank()) throw new InvalidInputException("name is required");
+        return ResponseEntity.ok(svc.searchByName(name));  // ✅ NEW: Call service
+    }
+
 }
