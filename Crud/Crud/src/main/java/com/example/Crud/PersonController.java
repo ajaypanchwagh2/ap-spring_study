@@ -1,7 +1,9 @@
 package com.example.Crud;
 
-
+import io.micrometer.tracing.Tracer;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,49 +13,81 @@ import java.util.List;
 @RestController
 @RequestMapping("/persons")
 public class PersonController {
-    private final PersonService svc;
-    public PersonController(PersonService svc) { this.svc = svc; }
 
-    // 201 Created + Location header
+    private static final Logger log = LoggerFactory.getLogger(PersonController.class);
+    private final PersonService personService;
+    private final Tracer tracer;
+
+    public PersonController(PersonService personService, Tracer tracer) {
+        this.personService = personService;
+        this.tracer = tracer;
+    }
+
     @PostMapping
     public ResponseEntity<Person> create(@Valid @RequestBody Person person) {
-        Person saved = svc.create(person);
-        return ResponseEntity
-                .created(URI.create("/persons/" + saved.getId()))
-                .body(saved); // 201
+        log.info("Creating person: {}, traceId={}", person, currentTraceId());
+        Person saved = personService.create(person);
+        return ResponseEntity.created(URI.create("/persons/" + saved.getId()))
+                .header("X-Trace-Id", currentTraceId())
+                .body(saved);
     }
 
-    // 200 OK or 404 via exception handler
     @GetMapping("/{id}")
     public ResponseEntity<Person> get(@PathVariable Long id) {
-        return ResponseEntity.ok(svc.getOrThrow(id)); // 200
+        log.info("Fetching person with id: {}, traceId={}", id, currentTraceId());
+        Person person = personService.getOrThrow(id);
+        return ResponseEntity.ok()
+                .header("X-Trace-Id", currentTraceId())
+                .body(person);
     }
 
-    // 200 OK on update
     @PutMapping("/{id}")
     public ResponseEntity<Person> update(@PathVariable Long id, @Valid @RequestBody Person person) {
-        return ResponseEntity.ok(svc.update(id, person)); // 200
+        log.info("Updating person with id: {}, traceId={}", id, currentTraceId());
+        Person updated = personService.update(id, person);
+        return ResponseEntity.ok()
+                .header("X-Trace-Id", currentTraceId())
+                .body(updated);
     }
 
-    // 204 No Content on delete
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        svc.delete(id);
-        return ResponseEntity.noContent().build(); // 204
+        log.info("Deleting person with id: {}, traceId={}", id, currentTraceId());
+        personService.delete(id);
+        return ResponseEntity.noContent()
+                .header("X-Trace-Id", currentTraceId())
+                .build();
     }
 
-    // 200 OK list
     @GetMapping
     public ResponseEntity<List<Person>> list() {
-        return ResponseEntity.ok(svc.list()); // 200
+        log.info("Fetching all persons, traceId={}", currentTraceId());
+        return ResponseEntity.ok()
+                .header("X-Trace-Id", currentTraceId())
+                .body(personService.list());
     }
-
-    // Optional: example of manual 400 for query param validation
 
     @GetMapping("/search")
     public ResponseEntity<List<Person>> search(@RequestParam(required = false) String name) {
-        if (name == null || name.isBlank()) throw new InvalidInputException("name is required");
-        return ResponseEntity.ok(svc.searchByName(name));  // ✅ NEW: Call service
+        if (name == null || name.isBlank()) {
+            log.warn("Search called without name parameter, traceId={}", currentTraceId());
+            throw new InvalidInputException("name is required");
+        }
+        log.info("Searching persons by name: {}, traceId={}", name, currentTraceId());
+        return ResponseEntity.ok()
+                .header("X-Trace-Id", currentTraceId())
+                .body(personService.searchByName(name));
     }
 
+    @GetMapping("/healthcheck")
+    public ResponseEntity<String> healthcheck() {
+        log.info("Healthcheck endpoint called, traceId={}", currentTraceId());
+        return ResponseEntity.ok()
+                .header("X-Trace-Id", currentTraceId())
+                .body("ok");
+    }
+
+    private String currentTraceId() {
+        return tracer.currentSpan() != null ? tracer.currentSpan().context().traceId() : "N/A";
+    }
 }
