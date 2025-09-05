@@ -5,8 +5,8 @@ spring:
     sampler:
       probability: 1.0  # 100% sampling for tracing
     profiles:
-      active: default # or test / prod
+      active: test # or test / prod
 
   logging:
     level:
-      root: Debug
+      root: Warn
