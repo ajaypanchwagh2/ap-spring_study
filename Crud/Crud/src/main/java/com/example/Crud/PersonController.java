@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -24,6 +25,7 @@ public class PersonController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Person> create(@Valid @RequestBody Person person) {
         log.info("Creating person: {}, traceId={}", person, currentTraceId());
         Person saved = personService.create(person);
@@ -33,6 +35,7 @@ public class PersonController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'VIEWER')")
     public ResponseEntity<Person> get(@PathVariable Long id) {
         log.info("Fetching person with id: {}, traceId={}", id, currentTraceId());
         Person person = personService.getOrThrow(id);
@@ -42,6 +45,7 @@ public class PersonController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Person> update(@PathVariable Long id, @Valid @RequestBody Person person) {
         log.info("Updating person with id: {}, traceId={}", id, currentTraceId());
         Person updated = personService.update(id, person);
@@ -51,6 +55,7 @@ public class PersonController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         log.info("Deleting person with id: {}, traceId={}", id, currentTraceId());
         personService.delete(id);
@@ -60,6 +65,7 @@ public class PersonController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'VIEWER')")
     public ResponseEntity<List<Person>> list() {
         log.info("Fetching all persons, traceId={}", currentTraceId());
         return ResponseEntity.ok()
@@ -68,6 +74,7 @@ public class PersonController {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('ADMIN', 'VIEWER')")
     public ResponseEntity<List<Person>> search(@RequestParam(required = false) String name) {
         if (name == null || name.isBlank()) {
             log.warn("Search called without name parameter, traceId={}", currentTraceId());
