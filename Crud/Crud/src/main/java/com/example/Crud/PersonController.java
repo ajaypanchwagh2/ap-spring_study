@@ -1,6 +1,9 @@
 package com.example.Crud;
 
 import io.micrometer.tracing.Tracer;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +16,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/persons")
+@Tag(name = "Person Controller", description = "CRUD operations and search for Person entities")
 public class PersonController {
 
     private static final Logger log = LoggerFactory.getLogger(PersonController.class);
@@ -24,6 +28,7 @@ public class PersonController {
         this.tracer = tracer;
     }
 
+    @Operation(summary = "Create a new person (ADMIN only)")
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Person> create(@Valid @RequestBody Person person) {
@@ -34,9 +39,11 @@ public class PersonController {
                 .body(saved);
     }
 
+    @Operation(summary = "Get a person by ID (ADMIN, VIEWER)")
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'VIEWER')")
-    public ResponseEntity<Person> get(@PathVariable Long id) {
+    public ResponseEntity<Person> get(
+            @Parameter(description = "ID of the person to fetch") @PathVariable Long id) {
         log.info("Fetching person with id: {}, traceId={}", id, currentTraceId());
         Person person = personService.getOrThrow(id);
         return ResponseEntity.ok()
@@ -44,9 +51,12 @@ public class PersonController {
                 .body(person);
     }
 
+    @Operation(summary = "Update a person by ID (ADMIN only)")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Person> update(@PathVariable Long id, @Valid @RequestBody Person person) {
+    public ResponseEntity<Person> update(
+            @Parameter(description = "ID of the person to update") @PathVariable Long id,
+            @Valid @RequestBody Person person) {
         log.info("Updating person with id: {}, traceId={}", id, currentTraceId());
         Person updated = personService.update(id, person);
         return ResponseEntity.ok()
@@ -54,9 +64,11 @@ public class PersonController {
                 .body(updated);
     }
 
+    @Operation(summary = "Delete a person by ID (ADMIN only)")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(
+            @Parameter(description = "ID of the person to delete") @PathVariable Long id) {
         log.info("Deleting person with id: {}, traceId={}", id, currentTraceId());
         personService.delete(id);
         return ResponseEntity.noContent()
@@ -64,6 +76,7 @@ public class PersonController {
                 .build();
     }
 
+    @Operation(summary = "List all persons (ADMIN, VIEWER)")
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'VIEWER')")
     public ResponseEntity<List<Person>> list() {
@@ -73,9 +86,11 @@ public class PersonController {
                 .body(personService.list());
     }
 
+    @Operation(summary = "Search persons by name (ADMIN, VIEWER)")
     @GetMapping("/search")
     @PreAuthorize("hasAnyRole('ADMIN', 'VIEWER')")
-    public ResponseEntity<List<Person>> search(@RequestParam(required = false) String name) {
+    public ResponseEntity<List<Person>> search(
+            @Parameter(description = "Name to search") @RequestParam(required = false) String name) {
         if (name == null || name.isBlank()) {
             log.warn("Search called without name parameter, traceId={}", currentTraceId());
             throw new InvalidInputException("name is required");
@@ -86,6 +101,7 @@ public class PersonController {
                 .body(personService.searchByName(name));
     }
 
+    @Operation(summary = "Healthcheck - public endpoint")
     @GetMapping("/healthcheck")
     public ResponseEntity<String> healthcheck() {
         log.info("Healthcheck endpoint called, traceId={}", currentTraceId());
