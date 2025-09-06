@@ -1,4 +1,4 @@
-package com.example.Crud.config;
+package com.example.Crud;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
