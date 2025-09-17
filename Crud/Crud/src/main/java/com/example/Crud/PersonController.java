@@ -140,7 +140,7 @@ public class PersonController {
         log.info("Searching persons older than {}, traceId={}", age, currentTraceId());
         return ResponseEntity.ok()
                 .header("X-Trace-Id", currentTraceId())
-                .body(personService.findyoungThan(age, pageable));
+                .body(personService.findYoungThan(age, pageable));
     }
 
 
