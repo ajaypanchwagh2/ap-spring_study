@@ -7,16 +7,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.List;
 
 @RestController
 @RequestMapping("/persons")
-@Tag(name = "Person Controller", description = "CRUD operations and search for Person entities")
+@Tag(name = "Person Controller", description = "CRUD operations and search for Person entities with pagination")
 public class PersonController {
 
     private static final Logger log = LoggerFactory.getLogger(PersonController.class);
@@ -76,29 +77,32 @@ public class PersonController {
                 .build();
     }
 
-    @Operation(summary = "List all persons (ADMIN, VIEWER)")
+    @Operation(summary = "List all persons with pagination (ADMIN, VIEWER)")
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'VIEWER')")
-    public ResponseEntity<List<Person>> list() {
-        log.info("Fetching all persons, traceId={}", currentTraceId());
+    public ResponseEntity<Page<Person>> list(Pageable pageable) {
+        log.info("Fetching persons with pagination, traceId={}", currentTraceId());
+        Page<Person> result = personService.list(pageable);
         return ResponseEntity.ok()
                 .header("X-Trace-Id", currentTraceId())
-                .body(personService.list());
+                .body(result);
     }
 
-    @Operation(summary = "Search persons by name (ADMIN, VIEWER)")
+    @Operation(summary = "Search persons by name with pagination (ADMIN, VIEWER)")
     @GetMapping("/search")
     @PreAuthorize("hasAnyRole('ADMIN', 'VIEWER')")
-    public ResponseEntity<List<Person>> search(
-            @Parameter(description = "Name to search") @RequestParam(required = false) String name) {
+    public ResponseEntity<Page<Person>> search(
+            @Parameter(description = "Name to search") @RequestParam(required = false) String name,
+            Pageable pageable) {
         if (name == null || name.isBlank()) {
             log.warn("Search called without name parameter, traceId={}", currentTraceId());
             throw new InvalidInputException("name is required");
         }
         log.info("Searching persons by name: {}, traceId={}", name, currentTraceId());
+        Page<Person> result = personService.searchByName(name, pageable);
         return ResponseEntity.ok()
                 .header("X-Trace-Id", currentTraceId())
-                .body(personService.searchByName(name));
+                .body(result);
     }
 
     @Operation(summary = "Healthcheck - public endpoint")
@@ -113,4 +117,31 @@ public class PersonController {
     private String currentTraceId() {
         return tracer.currentSpan() != null ? tracer.currentSpan().context().traceId() : "N/A";
     }
+
+    @Operation(summary = "Find persons older than given age (ADMIN, VIEWER)")
+    @GetMapping("/older-than")
+    @PreAuthorize("hasAnyRole('ADMIN', 'VIEWER')")
+    public ResponseEntity<Page<Person>> findOlderThan(
+            @RequestParam int age,
+            Pageable pageable) {
+        log.info("Searching persons older than {}, traceId={}", age, currentTraceId());
+        return ResponseEntity.ok()
+                .header("X-Trace-Id", currentTraceId())
+                .body(personService.findOlderThan(age, pageable));
+    }
+
+
+    @Operation(summary = "Find persons younger than given age (ADMIN, VIEWER)")
+    @GetMapping("/younger-than")
+    @PreAuthorize("hasAnyRole('ADMIN', 'VIEWER')")
+    public ResponseEntity<Page<Person>> findyoungThan(
+            @RequestParam int age,
+            Pageable pageable) {
+        log.info("Searching persons older than {}, traceId={}", age, currentTraceId());
+        return ResponseEntity.ok()
+                .header("X-Trace-Id", currentTraceId())
+                .body(personService.findyoungThan(age, pageable));
+    }
+
+
 }

@@ -2,9 +2,9 @@ package com.example.Crud;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class PersonService {
@@ -45,12 +45,24 @@ public class PersonService {
     }
 
     @Cacheable("allPersons")
-    public List<Person> list() {
-        return repo.findAll();
+    public Page<Person> list(Pageable pageable) {
+        return repo.findAll(pageable);
     }
 
-    // No caching needed for now, since this is placeholder
-    public List<Person> searchByName(String name) {
-        return List.of(); // implement real query later
+    public Page<Person> searchByName(String name, Pageable pageable) {
+        if (name == null || name.isBlank()) {
+            throw new InvalidInputException("Name must not be blank");
+        }
+        return repo.findByNameContainingIgnoreCase(name, pageable);
+    }
+
+    public Page<Person> findOlderThan(int age, Pageable pageable) {
+        if (age < 0) throw new InvalidInputException("Age must be positive");
+        return repo.findByAgeGreaterThanNative(age, pageable);
+    }
+
+    public Page<Person> findyoungThan(int age, Pageable pageable) {
+        if (age < 0) throw new InvalidInputException("Age must be positive");
+        return repo.findByAgelessThanNative(age, pageable);
     }
 }
