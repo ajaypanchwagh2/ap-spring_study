@@ -11,7 +11,9 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.data.RepositoryItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
+import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.LineMapper;
+import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
@@ -78,6 +80,9 @@ public class SpringBatchConfig {
         };
     }
 
+
+    // For databse update
+
     @Bean
     public RepositoryItemWriter<Customer> writer() {
         RepositoryItemWriter<Customer> writer = new RepositoryItemWriter<>();
@@ -85,6 +90,19 @@ public class SpringBatchConfig {
         writer.setMethodName("save");
         return writer;
     }
+
+    // for text file creation and update
+//    @Bean
+//    public FlatFileItemWriter<Customer> writer() {
+//        return new FlatFileItemWriterBuilder<Customer>()
+//                .name("customerWriter")
+//                .resource(new FileSystemResource("C:/output/customer.txt")) // Output file
+//                .delimited()  // you can use .formatted() or .lineAggregator() too
+//                .delimiter(",") // use comma-separated values
+//                .names("id", "firstName", "lastName", "email", "gender", "contactNo", "country", "dob") // fields from Customer class
+//                .shouldDeleteIfExists(true) // overwrite if file already exists
+//                .build();
+//    }
 
     @Bean
     public Step step1() {
